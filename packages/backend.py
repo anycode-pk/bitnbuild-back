@@ -10,9 +10,12 @@ import time
 from flask_cors import cross_origin
 
 DATABASE_DIR = 'databases/'
-DATABASE_NAME = 'app.db'
+DATABASE_NAME = 'proper.db'
 DATABASE_SCHEMA = 'app.sql'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).replace("packages", "")
+
+# timeline dla wszystkich wydarzen lacznie
+# global bedzie jako id 0
 
 
 def get_db() -> sqlite3.Connection:
@@ -226,7 +229,10 @@ def convert_date(event):
 @cross_origin()
 def event_timeline(module_id):
     cur = get_cursor()
-    cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
+    if module_id == "1":
+        cur.execute("SELECT * FROM event")
+    else:
+        cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
     if events is None:
         return jsonify({"events": []})
@@ -248,6 +254,19 @@ def image_name_game(module_id, number_of_events):
     return jsonify(events)
 
 
+@app.route("/game/image-date/<module_id>/<number_of_events>", methods=["GET"])
+@cross_origin()
+def image_date_game(module_id, number_of_events):
+    cur = get_cursor()
+    cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
+    events = cur.fetchall()
+    if events is None:
+        return jsonify({[]})
+    events = random.sample(events, int(number_of_events))
+    events = [{"date": event[2], "image_url": event[4]} for event in events]
+    return jsonify(events)
+
+
 @app.route("/game/higher-lower/<module_id>", methods=["GET"])
 @cross_origin()
 def higher_lower(module_id):
@@ -262,6 +281,69 @@ def higher_lower(module_id):
     events = [{"date": event[2], "title": event[3], "image_url": event[4]} for event in events]
     return jsonify(events)
 
+
+@app.route("/game/chronological/<module_id>/<number_of_events>", methods=["GET"])
+@cross_origin()
+def chronological(module_id, number_of_events):
+    cur = get_cursor()
+    cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
+    events = cur.fetchall()
+    if events is None:
+        return jsonify([])
+    random.seed(time.time())
+    events = random.sample(events, int(number_of_events))
+    events = sorted(events, key=convert_date)
+    events = [{"date": event[2], "title": event[3], "image_url": event[4]} for event in events]
+    return jsonify(events)
+
+
+@app.route("/questions/<module_id>", methods=["GET", "POST"])
+@cross_origin()
+def questions(module_id):
+    cur = get_cursor()
+    db = get_db()
+    if request.method == "POST":
+        data = request.json
+        fk_module_id = int(module_id)
+        question = data['question']
+        answers = data['answers']
+        correct_answer = data['correct_answer']
+        cur.execute("INSERT INTO questions (fk_module_id, question, answers, correct_answer) VALUES (?, ?, ?, ?, ?)", (fk_module_id, question, answers, correct_answer))
+        db.commit()
+        cur.execute('SELECT * FROM questions WHERE question = ?',
+                    (question,))
+        onequestion = cur.fetchone()
+        return jsonify({"id": onequestion[0], "response": 200})
+    elif request.method == "GET":
+        cur.execute(f"SELECT * FROM questions WHERE fk_module_id = {module_id}")
+        question_list = cur.fetchall()
+        question_list = [onequestion[0] for onequestion in question_list]
+        return jsonify(events)
+
+
+@app.route("/question/<question_id>", methods=["GET", "DELETE", "PUT"])
+@cross_origin()
+def get_question(question_id):
+    cur = get_cursor()
+    db = get_db()
+    if request.method == "GET":
+        cur.execute("SELECT * FROM questions WHERE question_id = ?", (question_id,))
+        onequestion = cur.fetchone()
+        if onequestion is None:
+            return jsonify({})
+        return jsonify({"id": onequestion[0], "module_id": onequestion[1], "question": onequestion[2], "answers": onequestion[3], "correct_answer": onequestion[4]})
+    elif request.method == "DELETE":
+        cur.execute("DELETE FROM questions WHERE question_id = ?", (question_id,))
+        db.commit()
+        return jsonify({"response": 200})
+    elif request.method == "PUT":
+        data = request.json
+        question = data['question']
+        answers = data['answers']
+        correct_answer = data['correct_answer']
+        cur.execute("UPDATE questions SET question = ?, answers = ?, correct_answer = ? WHERE question_id = ?", (question, answers, correct_answer))
+        db.commit()
+        return jsonify({"response": 200})
 
 @app.teardown_appcontext
 def close_connection(exception):

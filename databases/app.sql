@@ -16,4 +16,13 @@ CREATE TABLE IF NOT EXISTS "event" (
 	PRIMARY KEY("event_id" AUTOINCREMENT),
 	FOREIGN KEY("fk_module_id") REFERENCES "modules"("module_id")
 );
+CREATE TABLE IF NOT EXISTS "questions" (
+	"question_id"			INTEGER NOT NULL,
+	"fk_module_id"		INTEGER NOT NULL,
+	"question" 				TEXT NOT NULL,
+	"answers"				TEXT NOT NULL,
+	"correct_answer"		TEXT NOT NULL,
+	PRIMARY KEY("question_id" AUTOINCREMENT),
+	FOREIGN KEY("fk_module_id") REFERENCES "modules"("module_id")
+);
 COMMIT;
