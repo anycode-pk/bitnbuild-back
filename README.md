@@ -69,19 +69,19 @@ This API allows users to manage modules within the system.
 
   ```json
   {
-      "module": [
-          1,
-          "Module 1",
-          "http://example.com/module1.png",
-          "Description of Module 1"
-      ]
+      "module": {
+          "id": 1,
+          "title": "Module 1",
+          "image_url": "http://example.com/module1.png",
+          "description": "Description of Module 1"
+      }
   }
 
 - **If no modules exist:**
 
   ```json
   {
-    "module": []
+    "module": {}
   }
 
 #### Delete Module
@@ -109,6 +109,123 @@ This API allows users to manage modules within the system.
   
   ```json
   {
+    "title": "Updated Title",
+    "image_url": "http://example.com/updated_image.png",
+    "description": "Updated description."
+  }
+
+- **Response Body:**
+  
+  ```json
+  {
+      { "response": 200}
+  }
+
+### `/events`
+
+#### Get Events
+
+- **URL:** `/events/<module_id>`
+- **Method:** `GET`
+- **Description:** Retrieves a list of all event IDs.
+- **Request Body:** None
+- **Response Body:**
+  
+  ```json
+  {
+      "events": [1, 2, 3, ...]
+  }
+
+- **If no events exist:**
+
+  ```json
+  {
+    "events": []
+  }
+
+- **Response Code:** None
+
+#### Add Event
+
+- **URL:** `/events/<module_id>`
+- **Method:** `POST`
+- **Description:** Adds a new event to the system.
+- **Request Body:**
+
+  ```json
+  {
+    "date": "YYYY-MM-DD",
+    "title": "Event Title",
+    "image_url": "http://example.com/image.png",
+    "description": "Description of the event."
+  }
+
+- **Response Body:**
+
+  ```json
+  {
+    "id": 5,
+    "response": 200
+  }
+
+### `/event`
+
+### `/event/<event_id>`
+
+#### Get Event
+
+- **URL:** `/event/<event_id>`
+- **Method:** `GET`
+- **Description:** Retrieves details of a specific event.
+- **URL Parameters:**
+  - `event_id`: ID of the event to retrieve.
+- **Response Body:**
+
+  ```json
+  {
+      "event": [
+          "id": 1,
+          "module_id": 1,
+          "date": "1800-01-01",
+          "title": "Event 1",
+          "image_url": "http://example.com/event1.png",
+          "description": "Description of Event 1"
+      ]
+  }
+
+- **If no events exist:**
+
+  ```json
+  {
+    "event": []
+  }
+
+#### Delete Event
+
+- **URL:** `/event/<event_id>`
+- **Method:** `DELETE`
+- **Description:** Removes specific event.
+- **URL Parameters:**
+  - `event_id`: ID of the event to delete.
+- **Response Body:**
+  
+  ```json
+  {
+      { "response": 200}
+  }
+
+#### Put Event
+
+- **URL:** `/event/<event_id>`
+- **Method:** `PUT`
+- **Description:** Updates specific event.
+- **URL Parameters:**
+  - `event_id`: ID of the event to update.
+- **Response Body:**
+  
+  ```json
+  {
+    "date": "YYYY-MM-DD",
     "title": "Updated Title",
     "image_url": "http://example.com/updated_image.png",
     "description": "Updated description."
