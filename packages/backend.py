@@ -1,10 +1,8 @@
 from packages import app
-from flask import render_template, request, redirect, url_for
+from flask import request
 from flask import g
 import os
 import sqlite3
-from dataclasses import dataclass
-import logging
 from flask import jsonify
 
 DATABASE_DIR = 'databases/'
@@ -14,8 +12,8 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).replace("packages", "")
 
 # https://www.geeksforgeeks.org/how-to-build-a-web-app-using-flask-and-sqlite-in-python/
 
-# w formie komentarz
 
+#  /timeline/<module_id> get dla modulu chronologicznie
 
 def get_db() -> sqlite3.Connection:
     """
@@ -104,7 +102,6 @@ def index():
     Usage:
         Access this route to view the main page with information about books and their authors.
     """
-    cur = get_cursor()
     init_db()
     return 'Default Site'
 
@@ -139,8 +136,8 @@ def get_module(module_id):
         cur.execute("SELECT * FROM modules WHERE module_id = ?", (module_id,))
         module = cur.fetchone()
         if module is None:
-            return jsonify({"module": []})
-        return jsonify({"module": module})
+            return jsonify({"module": {}})
+        return jsonify({"module": {"id": module[0], "title": module[1], "image_url": module[2], "description": module[3]}})
     elif request.method == "DELETE":
         cur.execute("DELETE FROM modules WHERE module_id = ?", (module_id,))
         db.commit()
@@ -190,7 +187,8 @@ def get_event(event_id):
         event = cur.fetchone()
         if event is None:
             return jsonify({"event": {}})
-        return jsonify({"event": event})
+        # return jsonify({"event": event})
+        return jsonify({"event": {"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]}})
     elif request.method == "DELETE":
         cur.execute("DELETE FROM event WHERE event_id = ?", (event_id,))
         db.commit()
@@ -205,6 +203,17 @@ def get_event(event_id):
                     (event_date, event_title, event_image_url, event_description, event_id))
         db.commit()
         return jsonify({"response": 200})
+    
+def Co
+
+@app.route("/timeline/<module_id>", methods=["GET"])
+def event_timeline(module_id):
+    cur = get_cursor()
+    db = get_db()
+    cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
+    events = cur.fetchall()
+    
+    return jsonify({"events": events})
 
 
 @app.teardown_appcontext
