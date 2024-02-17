@@ -1,5 +1,5 @@
 from packages import app
-from flask import request
+from flask import request, render_template
 from flask import g
 import os
 import sqlite3
@@ -8,14 +8,13 @@ from dateutil import parser
 import random
 import time
 from flask_cors import cross_origin
+import markdown.extensions.fenced_code
+from pygments.formatters import HtmlFormatter
 
 DATABASE_DIR = 'databases/'
 DATABASE_NAME = 'app.db'
 DATABASE_SCHEMA = 'app.sql'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).replace("packages", "")
-
-# timeline dla wszystkich wydarzen lacznie
-# global bedzie jako id 0
 
 
 def get_db() -> sqlite3.Connection:
@@ -76,43 +75,62 @@ def init_db():
         db.commit()
 
 
-def make_dicts(cursor, row):
-    """
-    Convert a database row into a dictionary with column names as keys.
-
-    Args:
-        cursor (sqlite3.Cursor): The cursor object representing the database connection.
-        row (tuple): A database row to be converted into a dictionary.
-
-    Returns:
-        dict: A dictionary with column names as keys and corresponding values from the row.
-
-    Usage:
-        This function is typically used as the `row_factory` when fetching data from the database to obtain results as dictionaries.
-    """
-    return dict((cursor.description[idx][0], value)
-                for idx, value in enumerate(row))
-
-
 @app.route('/')
 @cross_origin()
 def index():
     """
-    Renders the main page displaying information about books and their authors.
+    Renders the index page with the content of the README.md file formatted as HTML.
+
+    Note:
+        This function initializes the database by calling `init_db()` and then reads the content of the README.md file.
+        It formats the content as Markdown using the `markdown` library with extensions 'fenced_code' and 'codehilite'.
+        Additionally, it applies syntax highlighting to code blocks using the 'emacs' style from the `HtmlFormatter` class in the `codehilite` extension.
 
     Returns:
-        render_template: Renders the 'base.html' template with the book and author data.
+        str: HTML content of the README.md file with syntax-highlighted code blocks.
+
+    Raises:
+        FileNotFoundError: If the README.md file is not found.
+        IOError: If there is an issue reading the README.md file.
+        RuntimeError: If the application context is not available.
 
     Usage:
-        Access this route to view the main page with information about books and their authors.
+        Navigate to the index page to view the formatted README.md content.
     """
     init_db()
-    return 'Default Site'
+    readme_file = open("README.md", "r", encoding="utf-8")
+    md_template_string = markdown.markdown(
+        readme_file.read(), extensions=["fenced_code", 'codehilite']
+    )
+    formatter = HtmlFormatter(style="emacs", full=True, cssclass="codehilite")
+    css_string = formatter.get_style_defs()
+    md_css_string = "<style>" + css_string + "</style>"
+    md_template = md_css_string + md_template_string
+    return md_template
 
 
 @app.route("/modules", methods=["GET", "POST"])
 @cross_origin()
 def modules():
+    """
+    Handles GET and POST requests for the '/modules' endpoint.
+
+    Note:
+        This function retrieves a cursor from the database using `get_cursor()` and the database connection using `get_db()`.
+        For POST requests, it expects JSON data containing 'title', 'image_url', and 'description'.
+        It inserts the received data into the 'modules' table and returns the ID of the inserted module.
+        For GET requests, it retrieves all modules from the 'modules' table and returns them as JSON objects.
+
+    Returns:
+        For POST requests:
+            dict: JSON response containing the ID of the inserted module and a success message.
+        For GET requests:
+            list: JSON response containing a list of dictionaries, each representing a module with 'id', 'title', 'image_url', and 'description' keys.
+
+    Usage:
+        - For POST requests, send JSON data with 'title', 'image_url', and 'description' to add a new module.
+        - For GET requests, retrieve a list of all modules.
+    """
     cur = get_cursor()
     db = get_db()
     if request.method == "POST":
@@ -131,13 +149,31 @@ def modules():
         modules = cur.fetchall()
         modules = [{"id": module[0], "title": module[1], "image_url": module[2],
                     "description": module[3]} for module in modules]
-        # modules = [module[0] for module in modules]
         return jsonify(modules)
 
 
 @app.route("/modules/<module_id>", methods=["GET", "DELETE", "PUT"])
 @cross_origin()
 def get_module(module_id):
+    """
+    Handles GET, DELETE, and PUT requests for specific module IDs via the '/modules/<module_id>' endpoint.
+
+    Args:
+        module_id (str): The ID of the module to retrieve, delete, or update.
+
+    Returns:
+        For GET requests:
+            dict: JSON response containing details of the module with the specified ID.
+        For DELETE requests:
+            dict: JSON response indicating successful deletion.
+        For PUT requests:
+            dict: JSON response indicating successful update.
+
+    Usage:
+        - For GET requests, retrieve details of a module by providing its ID.
+        - For DELETE requests, delete a module by providing its ID.
+        - For PUT requests, update details of a module by providing its ID and JSON data with updated 'title', 'image_url', and 'description'.
+    """
     cur = get_cursor()
     db = get_db()
     if request.method == "GET":
@@ -164,6 +200,22 @@ def get_module(module_id):
 @app.route("/events/<module_id>", methods=["GET", "POST"])
 @cross_origin()
 def events(module_id):
+    """
+    Handles GET and POST requests for events associated with a specific module via the '/events/<module_id>' endpoint.
+
+    Args:
+        module_id (str): The ID of the module associated with the events.
+
+    Returns:
+        For POST requests:
+            dict: JSON response containing the ID of the inserted event and a success message.
+        For GET requests:
+            list: JSON response containing a list of event IDs associated with the specified module.
+
+    Usage:
+        - For POST requests, add a new event associated with the specified module by providing JSON data with 'date', 'title', 'image_url', and 'description'.
+        - For GET requests, retrieve a list of event IDs associated with the specified module.
+    """
     cur = get_cursor()
     db = get_db()
     if request.method == "POST":
@@ -190,6 +242,25 @@ def events(module_id):
 @app.route("/event/<event_id>", methods=["GET", "DELETE", "PUT"])
 @cross_origin()
 def get_event(event_id):
+    """
+    Handles GET, DELETE, and PUT requests for specific event IDs via the '/event/<event_id>' endpoint.
+
+    Args:
+        event_id (str): The ID of the event to retrieve, delete, or update.
+
+    Returns:
+        For GET requests:
+            dict: JSON response containing details of the event with the specified ID.
+        For DELETE requests:
+            dict: JSON response indicating successful deletion.
+        For PUT requests:
+            dict: JSON response indicating successful update.
+
+    Usage:
+        - For GET requests, retrieve details of an event by providing its ID.
+        - For DELETE requests, delete an event by providing its ID.
+        - For PUT requests, update details of an event by providing its ID and JSON data with updated 'date', 'title', 'image_url', and 'description'.
+    """
     cur = get_cursor()
     db = get_db()
     if request.method == "GET":
@@ -215,6 +286,18 @@ def get_event(event_id):
 
 
 def convert_date(event):
+    """
+    Converts a date string in ISO format (YYYY-MM-DD) to a datetime object.
+
+    Args:
+        event (tuple): A tuple representing an event with a date string at index 2.
+
+    Returns:
+        datetime: A datetime object representing the converted date.
+
+    Usage:
+        Pass an event tuple containing a date string to convert it to a datetime object.
+    """
     temp = event[2].split("-")
     if len(temp) == 1:
         temp[0] = "0" * (4 - len(temp[0])) + temp[0]
@@ -236,6 +319,18 @@ def convert_date(event):
 @app.route("/timeline/<module_id>", methods=["GET"])
 @cross_origin()
 def event_timeline(module_id):
+    """
+    Retrieves events associated with a specific module ID and returns them sorted by date in ascending order.
+
+    Args:
+        module_id (str): The ID of the module to retrieve events for.
+
+    Returns:
+        list: JSON response containing a list of dictionaries, each representing an event with 'id', 'module_id', 'date', 'title', 'image_url', and 'description' keys, sorted by date.
+
+    Usage:
+        Retrieve events associated with a module by providing its ID.
+    """
     cur = get_cursor()
     if module_id == "1":
         cur.execute("SELECT * FROM event")
@@ -253,6 +348,19 @@ def event_timeline(module_id):
 @app.route("/game/image-name/<module_id>/<number_of_events>", methods=["GET"])
 @cross_origin()
 def image_name_game(module_id, number_of_events):
+    """
+    Retrieves a random selection of events' titles and image URLs associated with a specific module ID.
+
+    Args:
+        module_id (str): The ID of the module to retrieve events for.
+        number_of_events (str): The number of events to retrieve.
+
+    Returns:
+        list: JSON response containing a list of dictionaries, each representing an event with 'title' and 'image_url' keys.
+
+    Usage:
+        Retrieve a random selection of events' titles and image URLs associated with a module by providing its ID and the desired number of events.
+    """
     cur = get_cursor()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
@@ -266,6 +374,19 @@ def image_name_game(module_id, number_of_events):
 @app.route("/game/image-date/<module_id>/<number_of_events>", methods=["GET"])
 @cross_origin()
 def image_date_game(module_id, number_of_events):
+    """
+    Retrieves a random selection of events' dates and image URLs associated with a specific module ID.
+
+    Args:
+        module_id (str): The ID of the module to retrieve events for.
+        number_of_events (str): The number of events to retrieve.
+
+    Returns:
+        list: JSON response containing a list of dictionaries, each representing an event with 'date' and 'image_url' keys.
+
+    Usage:
+        Retrieve a random selection of events' dates and image URLs associated with a module by providing its ID and the desired number of events.
+    """
     cur = get_cursor()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
@@ -279,6 +400,18 @@ def image_date_game(module_id, number_of_events):
 @app.route("/game/higher-lower/<module_id>", methods=["GET"])
 @cross_origin()
 def higher_lower(module_id):
+    """
+    Retrieves two random events associated with a specific module ID for the higher-lower game.
+
+    Args:
+        module_id (str): The ID of the module to retrieve events for.
+
+    Returns:
+        list: JSON response containing a list of two dictionaries, each representing an event with 'date', 'title', and 'image_url' keys.
+
+    Usage:
+        Retrieve two random events associated with a module for the higher-lower game by providing its ID.
+    """
     cur = get_cursor()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
@@ -295,6 +428,19 @@ def higher_lower(module_id):
 @app.route("/game/chronological/<module_id>/<number_of_events>", methods=["GET"])
 @cross_origin()
 def chronological(module_id, number_of_events):
+    """
+    Retrieves a random selection of events associated with a specific module ID and returns them sorted chronologically by date.
+
+    Args:
+        module_id (str): The ID of the module to retrieve events for.
+        number_of_events (str): The number of events to retrieve.
+
+    Returns:
+        list: JSON response containing a list of dictionaries, each representing an event with 'date', 'title', and 'image_url' keys, sorted chronologically by date.
+
+    Usage:
+        Retrieve a random selection of events associated with a module and sorted chronologically by date by providing its ID and the desired number of events.
+    """
     cur = get_cursor()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
@@ -311,6 +457,18 @@ def chronological(module_id, number_of_events):
 @app.route("/game/trivia/<module_id>", methods=["GET"])
 @cross_origin()
 def trivia(module_id):
+    """
+    Retrieves a random trivia question associated with a specific module ID.
+
+    Args:
+        module_id (str): The ID of the module to retrieve trivia questions for.
+
+    Returns:
+        dict: JSON response containing a trivia question with 'question', 'answers', and 'correct_answer' keys.
+
+    Usage:
+        Retrieve a random trivia question associated with a module by providing its ID.
+    """
     cur = get_cursor()
     cur.execute(f"SELECT * FROM questions WHERE fk_module_id = {module_id}")
     questions = cur.fetchall()
@@ -328,6 +486,22 @@ def trivia(module_id):
 @app.route("/questions/<module_id>", methods=["GET", "POST"])
 @cross_origin()
 def questions(module_id):
+    """
+    Handles GET and POST requests for questions associated with a specific module ID via the '/questions/<module_id>' endpoint.
+
+    Args:
+        module_id (str): The ID of the module associated with the questions.
+
+    Returns:
+        For POST requests:
+            dict: JSON response containing the ID of the inserted question and a success message.
+        For GET requests:
+            list: JSON response containing a list of question IDs associated with the specified module.
+
+    Usage:
+        - For POST requests, add a new question associated with the specified module by providing JSON data with 'question', 'answers', and 'correct_answer'.
+        - For GET requests, retrieve a list of question IDs associated with the specified module.
+    """
     cur = get_cursor()
     db = get_db()
     if request.method == "POST":
@@ -355,6 +529,25 @@ def questions(module_id):
 @app.route("/question/<question_id>", methods=["GET", "DELETE", "PUT"])
 @cross_origin()
 def get_question(question_id):
+    """
+    Handles GET, DELETE, and PUT requests for specific question IDs via the '/question/<question_id>' endpoint.
+
+    Args:
+        question_id (str): The ID of the question to retrieve, delete, or update.
+
+    Returns:
+        For GET requests:
+            dict: JSON response containing details of the question with the specified ID.
+        For DELETE requests:
+            dict: JSON response indicating successful deletion.
+        For PUT requests:
+            dict: JSON response indicating successful update.
+
+    Usage:
+        - For GET requests, retrieve details of a question by providing its ID.
+        - For DELETE requests, delete a question by providing its ID.
+        - For PUT requests, update details of a question by providing its ID and JSON data with updated 'question', 'answers', and 'correct_answer'.
+    """
     cur = get_cursor()
     db = get_db()
     if request.method == "GET":
