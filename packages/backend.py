@@ -10,7 +10,7 @@ import time
 from flask_cors import cross_origin
 
 DATABASE_DIR = 'databases/'
-DATABASE_NAME = 'proper.db'
+DATABASE_NAME = 'app.db'
 DATABASE_SCHEMA = 'app.sql'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).replace("packages", "")
 
@@ -129,7 +129,8 @@ def modules():
     elif request.method == "GET":
         cur.execute("SELECT * FROM modules")
         modules = cur.fetchall()
-        modules = [{"id": module[0], "title": module[1], "image_url": module[2], "description": module[3]} for module in modules]
+        modules = [{"id": module[0], "title": module[1], "image_url": module[2],
+                    "description": module[3]} for module in modules]
         # modules = [module[0] for module in modules]
         return jsonify(modules)
 
@@ -215,12 +216,19 @@ def get_event(event_id):
 
 def convert_date(event):
     temp = event[2].split("-")
-    if len(temp[0]) < 4:
+    if len(temp) == 1:
         temp[0] = "0" * (4 - len(temp[0])) + temp[0]
-    if len(temp[1]) < 2:
-        temp[1] = "0" + temp[1]
-    if len(temp[2]) < 2:
-        temp[2] = "0" + temp[2]
+        temp.append("01")
+        temp.append("01")
+    elif len(temp) == 2:
+        temp.append("01")
+    elif len(temp) == 3:
+        if len(temp[0]) < 4:
+            temp[0] = "0" * (4 - len(temp[0])) + temp[0]
+        if len(temp[1]) < 2:
+            temp[1] = "0" + temp[1]
+        if len(temp[2]) < 2:
+            temp[2] = "0" + temp[2]
     temp = "-".join(temp)
     return parser.parse(temp, yearfirst=True)
 
@@ -237,7 +245,8 @@ def event_timeline(module_id):
     if events is None:
         return jsonify({"events": []})
     events = sorted(events, key=convert_date)
-    events = [{"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]} for event in events]
+    events = [{"id": event[0], "module_id": event[1], "date": event[2], "title": event[3],
+               "image_url": event[4], "description": event[5]} for event in events]
     return jsonify(events)
 
 
@@ -278,7 +287,8 @@ def higher_lower(module_id):
     random.seed(time.time())
     events = random.sample(events, 2)
     events = sorted(events, key=convert_date)
-    events = [{"date": event[2], "title": event[3], "image_url": event[4]} for event in events]
+    events = [{"date": event[2], "title": event[3],
+               "image_url": event[4]} for event in events]
     return jsonify(events)
 
 
@@ -293,8 +303,26 @@ def chronological(module_id, number_of_events):
     random.seed(time.time())
     events = random.sample(events, int(number_of_events))
     events = sorted(events, key=convert_date)
-    events = [{"date": event[2], "title": event[3], "image_url": event[4]} for event in events]
+    events = [{"date": event[2], "title": event[3],
+               "image_url": event[4]} for event in events]
     return jsonify(events)
+
+
+@app.route("/game/trivia/<module_id>", methods=["GET"])
+@cross_origin()
+def trivia(module_id):
+    cur = get_cursor()
+    cur.execute(f"SELECT * FROM questions WHERE fk_module_id = {module_id}")
+    questions = cur.fetchall()
+    if questions is None:
+        return jsonify([])
+    random.seed(time.time())
+    questions = random.sample(questions, 1)
+    answers = questions[3].split("|")
+    answers = [answer.strip() for answer in answers]
+    questions = {"question": questions[2], "answers": answers,
+                 "correct_answer": questions[4].strip()}
+    return jsonify(questions)
 
 
 @app.route("/questions/<module_id>", methods=["GET", "POST"])
@@ -307,15 +335,18 @@ def questions(module_id):
         fk_module_id = int(module_id)
         question = data['question']
         answers = data['answers']
+        answers = "|".join(answers)
         correct_answer = data['correct_answer']
-        cur.execute("INSERT INTO questions (fk_module_id, question, answers, correct_answer) VALUES (?, ?, ?, ?, ?)", (fk_module_id, question, answers, correct_answer))
+        cur.execute("INSERT INTO questions (fk_module_id, question, answers, correct_answer) VALUES (?, ?, ?, ?, ?)",
+                    (fk_module_id, question, answers, correct_answer))
         db.commit()
         cur.execute('SELECT * FROM questions WHERE question = ?',
                     (question,))
         onequestion = cur.fetchone()
         return jsonify({"id": onequestion[0], "response": 200})
     elif request.method == "GET":
-        cur.execute(f"SELECT * FROM questions WHERE fk_module_id = {module_id}")
+        cur.execute(
+            f"SELECT * FROM questions WHERE fk_module_id = {module_id}")
         question_list = cur.fetchall()
         question_list = [onequestion[0] for onequestion in question_list]
         return jsonify(events)
@@ -327,13 +358,15 @@ def get_question(question_id):
     cur = get_cursor()
     db = get_db()
     if request.method == "GET":
-        cur.execute("SELECT * FROM questions WHERE question_id = ?", (question_id,))
+        cur.execute(
+            "SELECT * FROM questions WHERE question_id = ?", (question_id,))
         onequestion = cur.fetchone()
         if onequestion is None:
             return jsonify({})
         return jsonify({"id": onequestion[0], "module_id": onequestion[1], "question": onequestion[2], "answers": onequestion[3], "correct_answer": onequestion[4]})
     elif request.method == "DELETE":
-        cur.execute("DELETE FROM questions WHERE question_id = ?", (question_id,))
+        cur.execute("DELETE FROM questions WHERE question_id = ?",
+                    (question_id,))
         db.commit()
         return jsonify({"response": 200})
     elif request.method == "PUT":
@@ -341,9 +374,11 @@ def get_question(question_id):
         question = data['question']
         answers = data['answers']
         correct_answer = data['correct_answer']
-        cur.execute("UPDATE questions SET question = ?, answers = ?, correct_answer = ? WHERE question_id = ?", (question, answers, correct_answer))
+        cur.execute("UPDATE questions SET question = ?, answers = ?, correct_answer = ? WHERE question_id = ?",
+                    (question, answers, correct_answer))
         db.commit()
         return jsonify({"response": 200})
+
 
 @app.teardown_appcontext
 def close_connection(exception):
