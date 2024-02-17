@@ -6,7 +6,7 @@ import sqlite3
 from dataclasses import dataclass
 import logging
 DATABASE_DIR = 'databases/'
-# DATABASE_NAME = 'ksiazki.db'
+DATABASE_NAME = 'app.db'
 # DATABASE_SCHEMA = 'ksiazki.sql'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).replace("packages", "")
 
@@ -89,9 +89,6 @@ def make_dicts(cursor, row):
     """
     return dict((cursor.description[idx][0], value)
                 for idx, value in enumerate(row))
-
-
-
 
 
 @app.route('/')
