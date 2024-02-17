@@ -245,3 +245,36 @@ This API allows users to manage modules within the system.
   {
       { "response": 200}
   }
+
+### `/timeline/<module_id>`
+
+#### Get chronologically events
+
+- **URL:** `/timeline/<module_id>`
+- **Method:** `GET`
+- **Description:** Retrieves details of a events chronologically.
+- **URL Parameters:**
+  - `module_id`: ID of the module to retrieve.
+- **Response Body:**
+
+  ```json
+  {
+      "events": [
+        {
+          "id": 1,
+          "module_id": 4,
+          "date": "1928-01-12",
+          "title": "Event in place X",
+          "image_url": "http://example.com/module1.png",
+          "description": "Description of event"
+        }
+        ...
+      ]
+  }
+
+- **If no modules exist:**
+
+  ```json
+  {
+    "events": []
+  }
