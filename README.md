@@ -1,8 +1,6 @@
 # bitnbuild-back
 
-## Modules API
-
-This API allows users to manage modules within the system.
+## API
 
 ### Base URL
 
@@ -22,13 +20,13 @@ This API allows users to manage modules within the system.
   
   ```json
   {
-    "modules": [
-        {
-            "id": 1,
-            "title": "some title",
-            "image_url": "test.asasdcom",
-            "description": "Tessat"
-        },
+    [
+      {
+          "id": 1,
+          "title": "some title",
+          "image_url": "test.asasdcom",
+          "description": "Tessat"
+      },
        ...
     ]
   }
@@ -37,7 +35,7 @@ This API allows users to manage modules within the system.
 
   ```json
   {
-    "modules": []
+    []
   }
 
 - **Response Code:** None
@@ -77,12 +75,10 @@ This API allows users to manage modules within the system.
 
   ```json
   {
-      "module": {
-          "id": 1,
-          "title": "Module 1",
-          "image_url": "http://example.com/module1.png",
-          "description": "Description of Module 1"
-      }
+    "id": 1,
+    "title": "Module 1",
+    "image_url": "http://example.com/module1.png",
+    "description": "Description of Module 1"
   }
 
 - **If no modules exist:**
@@ -113,7 +109,7 @@ This API allows users to manage modules within the system.
 - **Description:** Updates specific module.
 - **URL Parameters:**
   - `module_id`: ID of the module to update.
-- **Response Body:**
+- **Request Body:**
   
   ```json
   {
@@ -141,14 +137,14 @@ This API allows users to manage modules within the system.
   
   ```json
   {
-      "events": [1, 2, 3, ...]
+      [1, 2, 3, ...]
   }
 
 - **If no events exist:**
 
   ```json
   {
-    "events": []
+    []
   }
 
 - **Response Code:** None
@@ -187,25 +183,26 @@ This API allows users to manage modules within the system.
 - **Description:** Retrieves details of a specific event.
 - **URL Parameters:**
   - `event_id`: ID of the event to retrieve.
+- **Request Body:** None
 - **Response Body:**
 
   ```json
   {
-      "event": [
-          "id": 1,
-          "module_id": 1,
-          "date": "1800-01-01",
-          "title": "Event 1",
-          "image_url": "http://example.com/event1.png",
-          "description": "Description of Event 1"
-      ]
+    [
+        "id": 1,
+        "module_id": 1,
+        "date": "1800-01-01",
+        "title": "Event 1",
+        "image_url": "http://example.com/event1.png",
+        "description": "Description of Event 1"
+    ]
   }
 
 - **If no events exist:**
 
   ```json
   {
-    "event": []
+    []
   }
 
 #### Delete Event
@@ -215,6 +212,7 @@ This API allows users to manage modules within the system.
 - **Description:** Removes specific event.
 - **URL Parameters:**
   - `event_id`: ID of the event to delete.
+- **Request Body:** None
 - **Response Body:**
   
   ```json
@@ -229,7 +227,7 @@ This API allows users to manage modules within the system.
 - **Description:** Updates specific event.
 - **URL Parameters:**
   - `event_id`: ID of the event to update.
-- **Response Body:**
+- **Request Body:**
   
   ```json
   {
@@ -255,26 +253,28 @@ This API allows users to manage modules within the system.
 - **Description:** Retrieves details of a events chronologically.
 - **URL Parameters:**
   - `module_id`: ID of the module to retrieve.
+- **Response Body:** None
 - **Response Body:**
 
   ```json
   {
-      "events": [
-        {
-          "id": 1,
-          "module_id": 4,
-          "date": "1928-01-12",
-          "title": "Event in place X",
-          "image_url": "http://example.com/module1.png",
-          "description": "Description of event"
-        }
-        ...
-      ]
+    [
+      {
+        "id": 1,
+        "module_id": 4,
+        "date": "1928-01-12",
+        "title": "Event in place X",
+        "image_url": "http://example.com/module1.png",
+        "description": "Description of event"
+      }
+      ...
+    ]
   }
 
 - **If no modules exist:**
 
   ```json
   {
-    "events": []
+    []
   }
+  
