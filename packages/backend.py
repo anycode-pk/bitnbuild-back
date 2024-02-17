@@ -5,6 +5,8 @@ import os
 import sqlite3
 from dataclasses import dataclass
 import logging
+from flask import jsonify
+
 DATABASE_DIR = 'databases/'
 DATABASE_NAME = 'app.db'
 DATABASE_SCHEMA = 'app.sql'
@@ -103,7 +105,106 @@ def index():
         Access this route to view the main page with information about books and their authors.
     """
     cur = get_cursor()
+    init_db()
     return 'Default Site'
+
+
+@app.route("/modules", methods=["GET", "POST"])
+def modules():
+    cur = get_cursor()
+    db = get_db()
+    if request.method == "POST":
+        data = request.json
+        title = data['title']
+        image_url = data['image_url']
+        description = data['description']
+        cur.execute("INSERT INTO modules (module_title, module_image_url, module_description) VALUES (?, ?, ?)",
+                    (title, image_url, description))
+        db.commit()
+        cur.execute('SELECT * FROM modules WHERE module_title = ?', (title,))
+        module = cur.fetchone()
+        return jsonify({"id": module[0], "response": 200})
+    elif request.method == "GET":
+        cur.execute("SELECT * FROM modules")
+        modules = cur.fetchall()
+        modules = [module[0] for module in modules]
+        return jsonify({"modules": modules})
+
+
+@app.route("/modules/<module_id>", methods=["GET", "DELETE", "PUT"])
+def get_module(module_id):
+    cur = get_cursor()
+    db = get_db()
+    if request.method == "GET":
+        cur.execute("SELECT * FROM modules WHERE module_id = ?", (module_id,))
+        module = cur.fetchone()
+        if module is None:
+            return jsonify({"module": []})
+        return jsonify({"module": module})
+    elif request.method == "DELETE":
+        cur.execute("DELETE FROM modules WHERE module_id = ?", (module_id,))
+        db.commit()
+        return jsonify({"response": 200})
+    elif request.method == "PUT":
+        data = request.json
+        title = data['title']
+        image_url = data['image_url']
+        description = data['description']
+        cur.execute("UPDATE modules SET module_title = ?, module_image_url = ?, module_description = ? WHERE module_id = ?",
+                    (title, image_url, description, module_id))
+        db.commit()
+    return jsonify({"response": 200})
+
+
+@app.route("/events/<module_id>", methods=["GET", "POST"])
+def events(module_id):
+    cur = get_cursor()
+    db = get_db()
+    if request.method == "POST":
+        data = request.json
+        fk_module_id = int(module_id)
+        event_date = data['date']
+        event_title = data['title']
+        event_image_url = data['image_url']
+        event_description = data['description']
+        cur.execute("INSERT INTO event (fk_module_id, event_date, event_title, event_image_url, event_description) VALUES (?, ?, ?, ?, ?)",
+                    (fk_module_id, event_date, event_title, event_image_url, event_description))
+        db.commit()
+        cur.execute('SELECT * FROM event WHERE event_title = ?',
+                    (event_title,))
+        event = cur.fetchone()
+        return jsonify({"id": event[0], "response": 200})
+    elif request.method == "GET":
+        cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
+        events = cur.fetchall()
+        events = [event[0] for event in events]
+        return jsonify({"events": events})
+
+
+@app.route("/event/<event_id>", methods=["GET", "DELETE", "PUT"])
+def get_event(event_id):
+    cur = get_cursor()
+    db = get_db()
+    if request.method == "GET":
+        cur.execute("SELECT * FROM event WHERE event_id = ?", (event_id,))
+        event = cur.fetchone()
+        if event is None:
+            return jsonify({"event": {}})
+        return jsonify({"event": event})
+    elif request.method == "DELETE":
+        cur.execute("DELETE FROM event WHERE event_id = ?", (event_id,))
+        db.commit()
+        return jsonify({"response": 200})
+    elif request.method == "PUT":
+        data = request.json
+        event_date = data['date']
+        event_title = data['title']
+        event_image_url = data['image_url']
+        event_description = data['description']
+        cur.execute("UPDATE event SET event_date = ?, event_title = ?, event_image_url = ?, event_description = ? WHERE event_id = ?",
+                    (event_date, event_title, event_image_url, event_description, event_id))
+        db.commit()
+        return jsonify({"response": 200})
 
 
 @app.teardown_appcontext
