@@ -22,7 +22,15 @@ This API allows users to manage modules within the system.
   
   ```json
   {
-      "modules": [1, 2, 3, ...]
+    "modules": [
+        {
+            "id": 1,
+            "title": "some title",
+            "image_url": "test.asasdcom",
+            "description": "Tessat"
+        },
+       ...
+    ]
   }
 
 - **If no modules exist:**

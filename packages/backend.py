@@ -4,6 +4,7 @@ from flask import g
 import os
 import sqlite3
 from flask import jsonify
+from datetime import datetime
 
 DATABASE_DIR = 'databases/'
 DATABASE_NAME = 'app.db'
@@ -124,7 +125,8 @@ def modules():
     elif request.method == "GET":
         cur.execute("SELECT * FROM modules")
         modules = cur.fetchall()
-        modules = [module[0] for module in modules]
+        modules = [{"id": module[0], "title": module[1], "image_url": module[2], "description": module[3]} for module in modules]
+        # modules = [module[0] for module in modules]
         return jsonify({"modules": modules})
 
 
@@ -187,7 +189,6 @@ def get_event(event_id):
         event = cur.fetchone()
         if event is None:
             return jsonify({"event": {}})
-        # return jsonify({"event": event})
         return jsonify({"event": {"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]}})
     elif request.method == "DELETE":
         cur.execute("DELETE FROM event WHERE event_id = ?", (event_id,))
@@ -203,16 +204,20 @@ def get_event(event_id):
                     (event_date, event_title, event_image_url, event_description, event_id))
         db.commit()
         return jsonify({"response": 200})
-    
-def Co
+
+
+def convert_date(event):
+    return datetime.strptime(event[2], '%Y-%m-%d')
+
 
 @app.route("/timeline/<module_id>", methods=["GET"])
 def event_timeline(module_id):
     cur = get_cursor()
-    db = get_db()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
-    
+    if events is None:
+        return jsonify({"events": {}})
+    events = sorted(events, key=convert_date)
     return jsonify({"events": events})
 
 
