@@ -7,6 +7,7 @@ from flask import jsonify
 from dateutil import parser
 import random
 import time
+from flask_cors import cross_origin
 
 DATABASE_DIR = 'databases/'
 DATABASE_NAME = 'app.db'
@@ -91,6 +92,7 @@ def make_dicts(cursor, row):
 
 
 @app.route('/')
+@cross_origin()
 def index():
     """
     Renders the main page displaying information about books and their authors.
@@ -106,6 +108,7 @@ def index():
 
 
 @app.route("/modules", methods=["GET", "POST"])
+@cross_origin()
 def modules():
     cur = get_cursor()
     db = get_db()
@@ -125,10 +128,11 @@ def modules():
         modules = cur.fetchall()
         modules = [{"id": module[0], "title": module[1], "image_url": module[2], "description": module[3]} for module in modules]
         # modules = [module[0] for module in modules]
-        return jsonify({"modules": modules})
+        return jsonify(modules)
 
 
 @app.route("/modules/<module_id>", methods=["GET", "DELETE", "PUT"])
+@cross_origin()
 def get_module(module_id):
     cur = get_cursor()
     db = get_db()
@@ -136,8 +140,8 @@ def get_module(module_id):
         cur.execute("SELECT * FROM modules WHERE module_id = ?", (module_id,))
         module = cur.fetchone()
         if module is None:
-            return jsonify({"module": {}})
-        return jsonify({"module": {"id": module[0], "title": module[1], "image_url": module[2], "description": module[3]}})
+            return jsonify({})
+        return jsonify({"id": module[0], "title": module[1], "image_url": module[2], "description": module[3]})
     elif request.method == "DELETE":
         cur.execute("DELETE FROM modules WHERE module_id = ?", (module_id,))
         db.commit()
@@ -154,6 +158,7 @@ def get_module(module_id):
 
 
 @app.route("/events/<module_id>", methods=["GET", "POST"])
+@cross_origin()
 def events(module_id):
     cur = get_cursor()
     db = get_db()
@@ -175,10 +180,11 @@ def events(module_id):
         cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
         events = cur.fetchall()
         events = [event[0] for event in events]
-        return jsonify({"events": events})
+        return jsonify(events)
 
 
 @app.route("/event/<event_id>", methods=["GET", "DELETE", "PUT"])
+@cross_origin()
 def get_event(event_id):
     cur = get_cursor()
     db = get_db()
@@ -186,8 +192,8 @@ def get_event(event_id):
         cur.execute("SELECT * FROM event WHERE event_id = ?", (event_id,))
         event = cur.fetchone()
         if event is None:
-            return jsonify({"event": {}})
-        return jsonify({"event": {"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]}})
+            return jsonify({})
+        return jsonify({"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]})
     elif request.method == "DELETE":
         cur.execute("DELETE FROM event WHERE event_id = ?", (event_id,))
         db.commit()
@@ -217,6 +223,7 @@ def convert_date(event):
 
 
 @app.route("/timeline/<module_id>", methods=["GET"])
+@cross_origin()
 def event_timeline(module_id):
     cur = get_cursor()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
@@ -225,41 +232,35 @@ def event_timeline(module_id):
         return jsonify({"events": []})
     events = sorted(events, key=convert_date)
     events = [{"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]} for event in events]
-    return jsonify({"events": events})
-
-# /game/game_type/<module_id>/<ilosc>
-# dla gry obraz-imie
-# wybierasz wsyzystkie eventy dla modulu
-# wybierasz losowo X eventow
-# wybierasz tylko pola nazwa i obraz
-# zwracasz w jsonie pary
+    return jsonify(events)
 
 
 @app.route("/game/image-name/<module_id>/<number_of_events>", methods=["GET"])
+@cross_origin()
 def image_name_game(module_id, number_of_events):
     cur = get_cursor()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
     if events is None:
-        return jsonify({"events": []})
-    events = random.sample(events, number_of_events)
+        return jsonify({[]})
+    events = random.sample(events, int(number_of_events))
     events = [{"title": event[3], "image_url": event[4]} for event in events]
-    return jsonify({"events": events})
+    return jsonify(events)
 
 
 @app.route("/game/higher-lower/<module_id>", methods=["GET"])
+@cross_origin()
 def higher_lower(module_id):
     cur = get_cursor()
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
     if events is None:
-        return jsonify({"events": [],
-                        "valid": "false"})
+        return jsonify([])
     random.seed(time.time())
     events = random.sample(events, 2)
     events = sorted(events, key=convert_date)
     events = [{"date": event[2], "title": event[3], "image_url": event[4]} for event in events]
-    return jsonify({"events": events, "valid": "true"})
+    return jsonify(events)
 
 
 @app.teardown_appcontext
