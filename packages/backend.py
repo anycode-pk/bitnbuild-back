@@ -4,7 +4,6 @@ from flask import g
 import os
 import sqlite3
 from flask import jsonify
-from datetime import datetime
 from dateutil import parser
 import random
 import time
