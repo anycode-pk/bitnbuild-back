@@ -6,4 +6,3 @@ cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 from packages import backend
-
