@@ -216,8 +216,9 @@ def event_timeline(module_id):
     cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
     events = cur.fetchall()
     if events is None:
-        return jsonify({"events": {}})
+        return jsonify({"events": []})
     events = sorted(events, key=convert_date)
+    events = [{"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]} for event in events]
     return jsonify({"events": events})
 
 
