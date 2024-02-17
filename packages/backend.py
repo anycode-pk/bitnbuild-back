@@ -5,16 +5,15 @@ import os
 import sqlite3
 from flask import jsonify
 from datetime import datetime
+from dateutil import parser
+import random
+import time
 
 DATABASE_DIR = 'databases/'
 DATABASE_NAME = 'app.db'
 DATABASE_SCHEMA = 'app.sql'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).replace("packages", "")
 
-# https://www.geeksforgeeks.org/how-to-build-a-web-app-using-flask-and-sqlite-in-python/
-
-
-#  /timeline/<module_id> get dla modulu chronologicznie
 
 def get_db() -> sqlite3.Connection:
     """
@@ -207,7 +206,15 @@ def get_event(event_id):
 
 
 def convert_date(event):
-    return datetime.strptime(event[2], '%Y-%m-%d')
+    temp = event[2].split("-")
+    if len(temp[0]) < 4:
+        temp[0] = "0" * (4 - len(temp[0])) + temp[0]
+    if len(temp[1]) < 2:
+        temp[1] = "0" + temp[1]
+    if len(temp[2]) < 2:
+        temp[2] = "0" + temp[2]
+    temp = "-".join(temp)
+    return parser.parse(temp, yearfirst=True)
 
 
 @app.route("/timeline/<module_id>", methods=["GET"])
@@ -220,6 +227,40 @@ def event_timeline(module_id):
     events = sorted(events, key=convert_date)
     events = [{"id": event[0], "module_id": event[1], "date": event[2], "title": event[3], "image_url": event[4], "description": event[5]} for event in events]
     return jsonify({"events": events})
+
+# /game/game_type/<module_id>/<ilosc>
+# dla gry obraz-imie
+# wybierasz wsyzystkie eventy dla modulu
+# wybierasz losowo X eventow
+# wybierasz tylko pola nazwa i obraz
+# zwracasz w jsonie pary
+
+
+@app.route("/game/image-name/<module_id>/<number_of_events>", methods=["GET"])
+def image_name_game(module_id, number_of_events):
+    cur = get_cursor()
+    cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
+    events = cur.fetchall()
+    if events is None:
+        return jsonify({"events": []})
+    events = random.sample(events, number_of_events)
+    events = [{"title": event[3], "image_url": event[4]} for event in events]
+    return jsonify({"events": events})
+
+
+@app.route("/game/higher-lower/<module_id>", methods=["GET"])
+def higher_lower(module_id):
+    cur = get_cursor()
+    cur.execute(f"SELECT * FROM event WHERE fk_module_id = {module_id}")
+    events = cur.fetchall()
+    if events is None:
+        return jsonify({"events": [],
+                        "valid": "false"})
+    random.seed(time.time())
+    events = random.sample(events, 2)
+    events = sorted(events, key=convert_date)
+    events = [{"date": event[2], "title": event[3], "image_url": event[4]} for event in events]
+    return jsonify({"events": events, "valid": "true"})
 
 
 @app.teardown_appcontext
