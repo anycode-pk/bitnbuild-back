@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import logging
 DATABASE_DIR = 'databases/'
 DATABASE_NAME = 'app.db'
-# DATABASE_SCHEMA = 'ksiazki.sql'
+DATABASE_SCHEMA = 'app.sql'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).replace("packages", "")
 
 # https://www.geeksforgeeks.org/how-to-build-a-web-app-using-flask-and-sqlite-in-python/
