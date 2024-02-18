@@ -365,7 +365,7 @@ def image_name_game(module_id, number_of_events):
     if events is None:
         return jsonify({[]})
     events = random.sample(events, int(number_of_events))
-    events = [{"title": event[3], "image_url": event[4]} for event in events]
+    events = [{"event_id": event[0], "title": event[3], "image_url": event[4]} for event in events]
     return jsonify(events)
 
 
@@ -391,7 +391,7 @@ def image_date_game(module_id, number_of_events):
     if events is None:
         return jsonify({[]})
     events = random.sample(events, int(number_of_events))
-    events = [{"date": event[2], "image_url": event[4]} for event in events]
+    events = [{"event_id": event[0], "date": event[2], "image_url": event[4]} for event in events]
     return jsonify(events)
 
 
@@ -418,7 +418,7 @@ def higher_lower(module_id):
     random.seed(time.time())
     events = random.sample(events, 2)
     events = sorted(events, key=convert_date)
-    events = [{"date": event[2], "title": event[3],
+    events = [{"event_id": event[0], "date": event[2], "title": event[3],
                "image_url": event[4]} for event in events]
     return jsonify(events)
 
@@ -447,7 +447,7 @@ def chronological(module_id, number_of_events):
     random.seed(time.time())
     events = random.sample(events, int(number_of_events))
     events = sorted(events, key=convert_date)
-    events = [{"date": event[2], "title": event[3],
+    events = [{"event_id": event[0], "date": event[2], "title": event[3],
                "image_url": event[4]} for event in events]
     return jsonify(events)
 
@@ -521,7 +521,7 @@ def questions(module_id):
             f"SELECT * FROM questions WHERE fk_module_id = {module_id}")
         question_list = cur.fetchall()
         question_list = [onequestion[0] for onequestion in question_list]
-        return jsonify(events)
+        return jsonify(question_list)
 
 
 @app.route("/question/<question_id>", methods=["GET", "DELETE", "PUT"])
