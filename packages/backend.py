@@ -391,7 +391,7 @@ def image_date_game(module_id, number_of_events):
     if events is None:
         return jsonify({[]})
     events = random.sample(events, int(number_of_events))
-    events = [{"event_id": event[0], "date": event[2], "image_url": event[4]} for event in events]
+    events = [{"date": event[2], "image_url": event[4], "id": event[0], "year": "0" * (4 - len(event[2].split('-')[0])) + event[2].split('-')[0]} for event in events]
     return jsonify(events)
 
 
