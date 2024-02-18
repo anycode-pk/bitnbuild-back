@@ -474,10 +474,12 @@ def trivia(module_id):
         return jsonify([])
     random.seed(time.time())
     questions = random.sample(questions, 1)
+    if len(questions) < 1:
+        return jsonify({})
     answers = questions[3].split("|")
-    answers = [answer.strip() for answer in answers]
-    questions = {"question": questions[2], "answers": answers,
-                 "correct_answer": questions[4].strip()}
+    answers = questions[0][3].split("|")
+    questions = {"question": questions[0][2], "answers": answers,
+                 "correct_answer": questions[0][4].strip()}
     return jsonify(questions)
 
 
