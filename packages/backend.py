@@ -1,15 +1,13 @@
 from packages import app
-from flask import request, render_template
-from flask import g
-import os
-import sqlite3
-from flask import jsonify
-from dateutil import parser
-import random
-import time
+from flask import request, g, jsonify
 from flask_cors import cross_origin
 import markdown.extensions.fenced_code
 from pygments.formatters import HtmlFormatter
+import os
+import sqlite3
+from dateutil import parser
+import random
+import time
 
 DATABASE_DIR = 'databases/'
 DATABASE_NAME = 'app.db'
