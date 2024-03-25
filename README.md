@@ -16,7 +16,7 @@
 
 - **URL:** `/modules`
 - **Method:** `GET`
-- **Description:** Retrieves a list of all module IDs.
+- **Description:** Retrieves a list of all modules.
 - **Request Body:** None
 - **Response Body:**
   
